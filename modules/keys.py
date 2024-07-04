@@ -12,6 +12,8 @@ def private_key_to_public_key(private_key):
     return b'\04' + vk.to_string()
 
 def public_key_to_address(public_key):
+    if isinstance(public_key, str):
+        public_key = bytes.fromhex(public_key)
     sha256_1 = hashlib.sha256(public_key).digest()
     ripemd160 = hashlib.new('ripemd160')
     ripemd160.update(sha256_1)
@@ -29,4 +31,3 @@ def decrypt_private_key(encrypted_key, encryption_key):
     f = Fernet(encryption_key)
     decrypted_key = f.decrypt(encrypted_key)
     return decrypted_key
-
