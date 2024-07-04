@@ -9,3 +9,4 @@ def generate_qr_code(data):
     buf = io.BytesIO()
     img.save(buf)
     return base64.b64encode(buf.getvalue()).decode('utf-8')
+

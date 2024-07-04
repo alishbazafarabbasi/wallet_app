@@ -29,3 +29,4 @@ def decrypt_private_key(encrypted_key, encryption_key):
     f = Fernet(encryption_key)
     decrypted_key = f.decrypt(encrypted_key)
     return decrypted_key
+

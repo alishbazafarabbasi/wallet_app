@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Blockchain Wallet</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/style.css') }}"
+    />
+  </head>
+  <body>
+    <div class="container">
+      <div class="content">
+        <div class="wallet">
+          <h2>Blockchain Wallet</h2>
+          <div class="wallet-info">
+            <p><strong>Wallet Name:</strong> {{ wallet_name }}</p>
+            <p><strong>Address:</strong> {{ address }}</p>
+            <p><strong>Public Key:</strong> {{ public_key }}</p>
+            <p><strong>Private Key:</strong> {{ private_key }}</p>
+            <p><strong>Balance:</strong></p>
+            <p><strong>SOL:</strong> <span id="sol-balance">{{ sol_balance }}</span></p>
+            <p><strong>USD:</strong> <span id="usd-balance">{{ usd_balance }}</span></p>
+          </div>
+          <div class="qr-code" id="qr-code"></div>
+          <button onclick="toggleSend()">Send Transaction</button>
+          <div class="send-form" id="send-form">
+            <input type="text" id="recipient" placeholder="Recipient Address" />
+            <input type="number" id="amount" placeholder="Amount" />
+            <button onclick="sendTransaction()">Send</button>
+            <p id="error-message" style="color: red;"></p>
+          </div>
+        </div>
+        <div class="transaction-history" id="transaction-history">
+          <h3>Transaction History</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Transaction ID</th>
+                <th>Sender</th>
+                <th>Recipient</th>
+                <th>Amount</th>
+              </tr>
+            </thead>
+            <tbody id="transaction-table">
+              <!-- Transaction rows will be added dynamically here -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <script>
+      let solBalance = parseFloat("{{ sol_balance }}");
+
+      // Function to update transaction history table
+      function updateTransactionHistory(transactions) {
+        const transactionTable = document.getElementById("transaction-table");
+        transactionTable.innerHTML = ""; // Clear existing rows
+
+        transactions.forEach((transaction) => {
+          const row = `<tr>
+                  <td>${transaction.transaction_id}</td>
+                  <td>${transaction.sender}</td>
+                  <td>${transaction.recipient}</td>
+                  <td>${transaction.amount} (sol)</td>
+              </tr>`;
+          transactionTable.innerHTML += row;
+        });
+      }
+
+      // Function to update wallet details after a transaction
+      function updateWalletDetails(address) {
+        fetch(`/wallet/${address}`)
+          .then((response) => response.json())
+          .then((data) => {
+            solBalance = data.sol_balance;
+            document.getElementById("sol-balance").innerText = data.sol_balance;
+            document.getElementById("usd-balance").innerText = data.usd_balance;
+          })
+          .catch((error) => {
+            console.error("Error fetching wallet details:", error);
+            alert("Failed to fetch updated wallet details.");
+          });
+      }
+
+      // Example: Display transaction history on page load
+      window.onload = function () {
+        fetch("/transaction_history", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ address: "{{ address }}" }),
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            updateTransactionHistory(data.transactions);
+          })
+          .catch((error) => {
+            console.error("Error fetching transaction history:", error);
+            alert("Failed to fetch transaction history.");
+          });
+      };
+
+      function toggleSend() {
+        const sendForm = document.getElementById("send-form");
+        sendForm.classList.toggle("active");
+      }
+
+      function sendTransaction() {
+        const recipient = document.getElementById("recipient").value;
+        const amount = parseFloat(document.getElementById("amount").value);
+        const errorMessage = document.getElementById("error-message");
+
+        if (amount > solBalance) {
+          errorMessage.textContent = "Transaction amount exceeds available balance.";
+          return;
+        } else {
+          errorMessage.textContent = ""; // Clear any previous error message
+        }
+
+        const transaction = {
+          sender: "{{ address }}",
+          recipient: recipient,
+          amount: amount,
+        };
+
+        fetch("/send_transaction", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            transaction: transaction,
+            private_key: "{{ private_key }}",
+          }),
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.signature) {
+              alert("Transaction sent! Signature: " + data.signature);
+              window.location.reload();
+            } else {
+              throw new Error("Transaction failed");
+            }
+          })
+          .catch((error) => {
+            console.error("Error sending transaction:", error);
+            alert("Transaction failed. Please try again.");
+          });
+      }
+    </script>
+  </body>
+</html>

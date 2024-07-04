@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Create Wallet</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/style.css') }}"
+    />
+  </head>
+  <body>
+    <div class="container">
+      <div class="content">
+        <div class="create-wallet">
+          <h2>Create Wallet</h2>
+          <h3>Solana Coin</h3>
+          <form action="/create_wallet" method="post">
+            <label for="wallet_name">Enter Wallet Name:</label><br />
+            <input
+              type="text"
+              id="wallet_name"
+              name="wallet_name"
+              required
+            /><br /><br />
+            <label for="mnemonic">Enter Mnemonic:</label><br />
+            <textarea
+              id="mnemonic"
+              name="mnemonic"
+              rows="6"
+              cols="50"
+              required
+            ></textarea
+            ><br /><br />
+            <button type="submit">Create Wallet</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
+
