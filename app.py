@@ -24,47 +24,46 @@ solana_client = Client(solana_rpc_url)
 def index():
     return render_template('create_wallet.html')
 
-
-@app.route('/create_wallet', methods=['POST'])
+@app.route('/create_wallet', methods=['GET', 'POST'])
 def create_wallet():
-    try:
-        wallet_name = request.form.get('wallet_name')
-        secret_key = [
-            174, 47, 154, 16, 202, 193, 206, 113,
-            199, 190, 53, 133, 169, 175, 31, 56,
-            222, 53, 138, 189, 224, 216, 117, 173,
-            10, 149, 53, 45, 73, 251, 237, 246,
-            15, 185, 186, 82, 177, 240, 148, 69,
-            241, 227, 167, 80, 141, 89, 240, 121,
-            121, 35, 172, 247, 68, 251, 226, 218,
-            48, 63, 176, 109, 168, 89, 238, 135,
-        ]
+    error = None
 
-        keypair = Keypair.from_bytes(secret_key)
-        print(f"Created Keypair with public key: {keypair.pubkey()}")
+    if request.method == 'POST':
+        try:
+            wallet_name = request.form.get('wallet_name')
+            secret_key_input = request.form.get('secret_key')
+            
+            # Validate secret_key format (comma-separated integers)
+            try:
+                secret_key = list(map(int, secret_key_input.split(',')))
+            except ValueError:
+                error = 'Secret key format is incorrect. Please use comma-separated integers.'
 
-        public_key = keypair.pubkey()
+            if not error:
+                # Create keypair from the secret key
+                keypair = Keypair.from_bytes(secret_key)
+                print(f"Created Keypair with public key: {keypair.pubkey()}")
 
-        # receiver_keypair = Keypair()
+                public_key = keypair.pubkey()
 
-        # Generate a new Solana keypair
-        # public_key = receiver_keypair.pubkey()
+                # Store wallet details
+                wallet_address = str(public_key)
+                wallets_db[wallet_address] = {
+                    'wallet_name': wallet_name,
+                    'public_key': public_key,
+                    'transactions': [],
+                }
 
-        # Store wallet details
-        wallet_address = str(public_key)
-        wallets_db[wallet_address] = {
-            'wallet_name': wallet_name,
-            'public_key': public_key,
-            'transactions': [],
-        }
+                # Redirect to wallet details page
+                return redirect(url_for('wallet_details', address=wallet_address))
 
-        # Redirect to wallet details page
-        return redirect(url_for('wallet_details', address=wallet_address))
+        except Exception as e:
+            app.logger.error(f"Error generating wallet: {e}")
+            error = 'Failed to generate wallet'
 
-    except Exception as e:
-        app.logger.error(f"Error generating wallet: {e}")
-        return jsonify({'error': 'Failed to generate wallet'}), 500
-
+    # Render the template with or without error message
+    return render_template('create_wallet.html',error=error)
+                           
 @app.route('/wallet/<address>')
 def wallet_details(address):
     if address not in wallets_db:

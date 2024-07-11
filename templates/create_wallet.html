@@ -40,11 +40,26 @@
               name="wallet_name"
               required
             /><br /><br />
+            <label for="secret_key"
+              >Enter Secret Key (comma-separated integers): e-g </label
+            ><br />
+            <input type="text" id="secret_key" name="secret_key" required />
+            <br />
+            <br />
+            Example key: 123, 456, 789
+            <br />
+            <br />
+
+            {% if error %}
+            <div class="error-message" style="color: red">
+              <p>{{ error }}</p>
+            </div>
+            {% endif %}
             <button type="submit">Create Wallet</button>
           </form>
           <br />
         </div>
       </div>
     </div>
-  </body>
+  </body>
 </html>
