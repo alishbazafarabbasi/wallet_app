@@ -1,6 +1,5 @@
 Flask==2.0.2
-solana==0.34.2  # Replace with an available version
-mnemonic==0.20
+solana==0.34.2 
 requests==2.26.0
 pytest==6.2.5
 qrcode[pil]==7.4

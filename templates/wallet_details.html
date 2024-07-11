@@ -8,6 +8,35 @@
       rel="stylesheet"
       href="{{ url_for('static', filename='css/style.css') }}"
     />
+    <style>
+      h2 {
+        color: rgb(3, 3, 109);
+      }
+
+      button {
+        background-color: rgb(3, 3, 109);
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        cursor: pointer;
+      }
+
+      button:hover {
+        background-color: rgb(4, 4, 160); /* Lighter blue for hover effect */
+      }
+
+      #faucet-button {
+        background-color: rgb(3, 3, 109);
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        cursor: pointer;
+      }
+
+      #faucet-button:hover {
+        background-color: rgb(70, 70, 150); /* Lighter blue for hover effect */
+      }
+    </style>
   </head>
   <body>
     <div class="container">
@@ -18,137 +47,167 @@
             <p><strong>Wallet Name:</strong> {{ wallet_name }}</p>
             <p><strong>Address:</strong> {{ address }}</p>
             <p><strong>Public Key:</strong> {{ public_key }}</p>
-            <p><strong>Private Key:</strong> {{ private_key }}</p>
-            <p><strong>Balance:</strong></p>
-            <p><strong>SOL:</strong> <span id="sol-balance">{{ sol_balance }}</span></p>
-            <p><strong>USD:</strong> <span id="usd-balance">{{ usd_balance }}</span></p>
+            <!-- <p><strong>Private Key:</strong> {{ private_key }}</p> -->
           </div>
           <div class="qr-code" id="qr-code"></div>
-          <button onclick="toggleSend()">Send Transaction</button>
           <div class="send-form" id="send-form">
             <input type="text" id="recipient" placeholder="Recipient Address" />
             <input type="number" id="amount" placeholder="Amount" />
             <button onclick="sendTransaction()">Send</button>
-            <p id="error-message" style="color: red;"></p>
           </div>
         </div>
-        <div class="transaction-history" id="transaction-history">
-          <h3>Transaction History</h3>
-          <table>
-            <thead>
-              <tr>
-                <th>Transaction ID</th>
-                <th>Sender</th>
-                <th>Recipient</th>
-                <th>Amount</th>
-              </tr>
-            </thead>
-            <tbody id="transaction-table">
-              <!-- Transaction rows will be added dynamically here -->
-            </tbody>
-          </table>
+        <!-- <button onclick="toggleSend()">Send Transaction</button> -->
+        <div
+          id="faucet-container"
+          style="
+            display: flex;
+            justify-content: center;
+            margin-top: 1rem;
+            gap: 2rem;
+          "
+        >
+          <div id="faucet-form">
+            <input
+              type="hidden"
+              id="wallet_address"
+              name="wallet_address"
+              value="{{ address }}"
+            />
+            <a
+              href="https://faucet.solana.com"
+              style="text-decoration: none; color: white; margin-top: 1rem"
+            >
+              <button id="faucet-button">Request Tokens from Faucet</button>
+            </a>
+          </div>
+          <div id="balance-form">
+            <button onclick="getWalletBalance()">Get Wallet Balance</button>
+          </div>
         </div>
+        <div
+          style="
+            display: flex;
+            justify-content: center;
+            margin-top: 0.5rem;
+            align-items: center;
+            gap: 0.5rem;
+          "
+        >
+          <h3>Balance:</h3>
+          <div id="balance-value"></div>
+        </div>
+        <div id="balance-result"></div>
+
+        <h1>Transfer SOL</h1>
+        <form onsubmit="event.preventDefault(); transferSOL();">
+          <label for="sender_address">Sender Address:</label><br />
+          <input
+            type="text"
+            id="sender_address"
+            name="sender_address"
+          /><br /><br />
+
+          <label for="receiver_address">Receiver Address:</label><br />
+          <input
+            type="text"
+            id="receiver_address"
+            name="receiver_address"
+          /><br /><br />
+
+          <label for="tamount">Amount (in lamports):</label><br />
+          <input type="text" id="tamount" name="tamount" /><br /><br />
+
+          <label for="private_key">Sender Private Key:</label><br />
+          <input type="text" id="private_key" name="private_key" /><br /><br />
+          <button type="submit">Transfer</button>
+        </form>
+        <div id="result">
+          <p id="tx_id"></p>
+          <p id="blockhash"></p>
+          <p id="status" style="color: green"></p>
+        </div>
+        <div id="error_message" style="color: red"></div>
       </div>
     </div>
     <script>
-      let solBalance = parseFloat("{{ sol_balance }}");
-
-      // Function to update transaction history table
-      function updateTransactionHistory(transactions) {
-        const transactionTable = document.getElementById("transaction-table");
-        transactionTable.innerHTML = ""; // Clear existing rows
-
-        transactions.forEach((transaction) => {
-          const row = `<tr>
-                  <td>${transaction.transaction_id}</td>
-                  <td>${transaction.sender}</td>
-                  <td>${transaction.recipient}</td>
-                  <td>${transaction.amount} (sol)</td>
-              </tr>`;
-          transactionTable.innerHTML += row;
-        });
-      }
-
-      // Function to update wallet details after a transaction
-      function updateWalletDetails(address) {
-        fetch(`/wallet/${address}`)
-          .then((response) => response.json())
-          .then((data) => {
-            solBalance = data.sol_balance;
-            document.getElementById("sol-balance").innerText = data.sol_balance;
-            document.getElementById("usd-balance").innerText = data.usd_balance;
-          })
-          .catch((error) => {
-            console.error("Error fetching wallet details:", error);
-            alert("Failed to fetch updated wallet details.");
-          });
-      }
-
-      // Example: Display transaction history on page load
-      window.onload = function () {
-        fetch("/transaction_history", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ address: "{{ address }}" }),
-        })
-          .then((response) => response.json())
-          .then((data) => {
-            updateTransactionHistory(data.transactions);
-          })
-          .catch((error) => {
-            console.error("Error fetching transaction history:", error);
-            alert("Failed to fetch transaction history.");
-          });
-      };
-
       function toggleSend() {
         const sendForm = document.getElementById("send-form");
         sendForm.classList.toggle("active");
       }
 
-      function sendTransaction() {
-        const recipient = document.getElementById("recipient").value;
-        const amount = parseFloat(document.getElementById("amount").value);
-        const errorMessage = document.getElementById("error-message");
+      function getWalletBalance() {
+        const address = document.getElementById("wallet_address").value;
+        const balanceResult = document.getElementById("balance-result");
 
-        if (amount > solBalance) {
-          errorMessage.textContent = "Transaction amount exceeds available balance.";
-          return;
-        } else {
-          errorMessage.textContent = ""; // Clear any previous error message
-        }
-
-        const transaction = {
-          sender: "{{ address }}",
-          recipient: recipient,
-          amount: amount,
-        };
-
-        fetch("/send_transaction", {
+        fetch("/get_wallet_balance", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({
-            transaction: transaction,
-            private_key: "{{ private_key }}",
-          }),
+          body: JSON.stringify({ address: address }),
         })
-          .then((response) => response.json())
+          .then((response) => {
+            console.log("Response received:", response);
+            if (!response.ok) {
+              throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+            return response.json();
+          })
           .then((data) => {
-            if (data.signature) {
-              alert("Transaction sent! Signature: " + data.signature);
-              window.location.reload();
+            console.log("Data received:", data);
+            if (data?.status === "success") {
+              document.getElementById("balance-value").innerText = data.balance;
+              balanceResult.innerHTML = `<p style="color: green">Wallet balance fetched successfully.</p>`;
             } else {
-              throw new Error("Transaction failed");
+              balanceResult.innerHTML = `<p>Error: ${data?.message}</p>`;
             }
           })
           .catch((error) => {
-            console.error("Error sending transaction:", error);
-            alert("Transaction failed. Please try again.");
+            console.error("Error fetching wallet balance:", error);
+            balanceResult.innerHTML = `<p>Error: ${error.message}</p>`;
           });
+      }
+
+      async function transferSOL() {
+        const senderAddress = document.getElementById("sender_address").value;
+        const receiverAddress =
+          document.getElementById("receiver_address").value;
+        const amountStr = document.getElementById("tamount").value;
+        const privateKey = document.getElementById("private_key").value;
+        const amount = parseInt(amountStr, 10);
+        try {
+          const response = await fetch("/transfer_sol", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              sender_address: senderAddress,
+              receiver_address: receiverAddress || null,
+              amount: amount,
+              private_key: privateKey,
+            }),
+          });
+
+          const result = await response.json();
+
+          if (response.ok) {
+            document.getElementById(
+              "blockhash"
+            ).innerText = `Recent Blockhash: ${result.recent_blockhash}`;
+            document.getElementById(
+              "status"
+            ).innerText = `Status: ${result.status}`;
+            document.getElementById(
+              "tx_id"
+            ).innerText = `Transaction ID: ${result.tx_id}`;
+            document.getElementById("error_message").style.display = "none";
+          } else {
+            throw new Error(result.error || "Unknown error occurred.");
+          }
+        } catch (error) {
+          document.getElementById("error_message").innerText = error.message;
+        }
       }
     </script>
   </body>

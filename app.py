@@ -1,69 +1,65 @@
 from flask import Flask, request, jsonify, render_template, redirect, url_for
-from modules.keys import generate_private_key, private_key_to_public_key, public_key_to_address, encrypt_private_key, decrypt_private_key, generate_encryption_key
-from modules.transactions import sign_transaction
-from modules.qr_code import generate_qr_code
-from logging.config import dictConfig
-import os
+from solana.rpc.api import Client
+from solders.keypair import Keypair 
+import requests
+import logging
+from solders.transaction import VersionedTransaction
+from solders.system_program import transfer, TransferParams
+from solders.message import MessageV0
 
-# Mock balance in SOL and USD
-mock_sols = {}
-mock_usd = {}
+
 
 app = Flask(__name__)
+app.logger.setLevel(logging.INFO) 
 
-# Setup logging
-dictConfig({
-    'version': 1,
-    'formatters': {'default': {
-        'format': '[%(asctime)s] %(levelname)s in %(module)s: %(message)s',
-    }},
-    'handlers': {'wsgi': {
-        'class': 'logging.StreamHandler',
-        'stream': 'ext://flask.logging.wsgi_errors_stream',
-        'formatter': 'default'
-    }},
-    'root': {
-        'level': 'INFO',
-        'handlers': ['wsgi']
-    }
-})
-
-# Temporary storage for wallets and transactions (for demonstration purposes)
-# In a real-world application, use a secure and persistent storage.
 wallets_db = {}
-transactions_db = {}
-encryption_key = generate_encryption_key()
 
-initial_balance_sol = 100
-initial_balance_usd = 29.26
+logging.basicConfig(level=logging.DEBUG)
+
+# Replace with your actual Solana RPC URL
+solana_rpc_url = "https://api.devnet.solana.com"
+solana_client = Client(solana_rpc_url)
+
 @app.route('/')
 def index():
     return render_template('create_wallet.html')
+
 
 @app.route('/create_wallet', methods=['POST'])
 def create_wallet():
     try:
         wallet_name = request.form.get('wallet_name')
-        mnemonic = request.form.get('mnemonic')
-        
-        # Generate keys (for demonstration purposes, use random keys)
-        private_key = generate_private_key()
-        encrypted_private_key = encrypt_private_key(private_key, encryption_key)
-        public_key = private_key_to_public_key(private_key)
-        address = public_key_to_address(public_key)
+        secret_key = [
+            174, 47, 154, 16, 202, 193, 206, 113,
+            199, 190, 53, 133, 169, 175, 31, 56,
+            222, 53, 138, 189, 224, 216, 117, 173,
+            10, 149, 53, 45, 73, 251, 237, 246,
+            15, 185, 186, 82, 177, 240, 148, 69,
+            241, 227, 167, 80, 141, 89, 240, 121,
+            121, 35, 172, 247, 68, 251, 226, 218,
+            48, 63, 176, 109, 168, 89, 238, 135,
+        ]
 
-        # Store wallet details with initial balance
-        wallets_db[address] = {
+        keypair = Keypair.from_bytes(secret_key)
+        print(f"Created Keypair with public key: {keypair.pubkey()}")
+
+        public_key = keypair.pubkey()
+
+        # receiver_keypair = Keypair()
+
+        # Generate a new Solana keypair
+        # public_key = receiver_keypair.pubkey()
+
+        # Store wallet details
+        wallet_address = str(public_key)
+        wallets_db[wallet_address] = {
             'wallet_name': wallet_name,
-            'private_key': encrypted_private_key.hex(),
-            'public_key': public_key.hex(),
-            'transactions': [],  # Initialize empty transactions list
-            'balance_sol': mock_sols.get(address, initial_balance_sol),  # Initial SOL balance for new wallet
-            'balance_usd': mock_usd.get(address, initial_balance_usd),  # Initial USD balance for new wallet
+            'public_key': public_key,
+            'transactions': [],
         }
 
         # Redirect to wallet details page
-        return redirect(url_for('wallet_details', address=address))
+        return redirect(url_for('wallet_details', address=wallet_address))
 
     except Exception as e:
         app.logger.error(f"Error generating wallet: {e}")
@@ -76,95 +72,206 @@ def wallet_details(address):
 
     wallet_info = wallets_db[address]
 
-    # Calculate USD balance based on conversion rate (1 USD = 3.8 SOL)
-    usd_balance = wallet_info['balance_sol'] / 3.8
-
-    usd_balance_formatted = "{:.2f}".format(usd_balance)
-    
-    return render_template('wallet_details.html', 
-                           wallet_name=wallet_info['wallet_name'], 
-                           address=address, 
-                           public_key=wallet_info['public_key'], 
-                           private_key=wallet_info['private_key'],
-                           sol_balance=wallet_info['balance_sol'],
-                           usd_balance=usd_balance_formatted)
-
-@app.route('/send_transaction', methods=['POST'])
-def send_transaction():
-    try:
-        transaction = request.json.get('transaction')
-        private_key_encrypted = request.json.get('private_key')
-
-        if not transaction or not private_key_encrypted:
-            raise ValueError("Transaction data or private key missing")
-
-        sender = transaction['sender']
-        recipient = transaction['recipient']
-        amount = transaction['amount']
-
-        if sender not in wallets_db:
-            raise ValueError("Invalid sender address")
-
-        sender_balance = wallets_db[sender]['balance_sol']
-
-        if sender_balance < amount:
-            raise ValueError("Insufficient balance")
-
-        # Deduct from sender's balance
-        wallets_db[sender]['balance_sol'] -= amount
-
-        # Decrypt the private key
-        private_key = decrypt_private_key(bytes.fromhex(private_key_encrypted), encryption_key)
-        signature = sign_transaction(transaction, private_key)
-
-        # Store the transaction in the "database"
-        transaction_id = len(transactions_db) + 1
-        transactions_db[transaction_id] = {
-            'transaction': transaction,
-            'signature': signature
-        }
-
-        # Update recipient's balance (for demonstration purposes, add amount to balance)
-        if recipient in wallets_db:
-            wallets_db[recipient]['balance_sol'] += amount
-        else:
-            # For demonstration, create recipient wallet with initial balance
-            wallets_db[recipient] = {
-                'wallet_name': f'Wallet for {recipient}',
-                'balance_sol': amount,
-                'transactions': [],
-            }
-
-        # Update sender's transaction list
-        wallets_db[sender]['transactions'].append(transaction_id)
-
-        return jsonify({'transaction': transaction, 'signature': signature})
-
-    except Exception as e:
-        app.logger.error(f"Error signing transaction: {e}")
-        return jsonify({'error': str(e)}), 400
+    return render_template('wallet_details.html',
+                           wallet_name=wallet_info['wallet_name'],
+                           address=address,
+                           public_key=wallet_info['public_key'])
 
 @app.route('/transaction_history', methods=['POST'])
 def transaction_history():
-    address = request.json.get('address')
-    if not address:
-        return jsonify({'error': 'Address not provided'}), 400
+    try:
+        data = request.json
+        address = data.get('address')
 
-    if address not in wallets_db:
-        return jsonify({'error': 'Wallet not found'}), 404
+        if not address:
+            return jsonify({'error': 'Address not provided'}), 400
 
-    wallet_transactions = wallets_db[address]['transactions']
-    relevant_transactions = [
-        {
-            'transaction_id': tid,
-            'sender': transactions_db[tid]['transaction']['sender'],
-            'recipient': transactions_db[tid]['transaction']['recipient'],
-            'amount': transactions_db[tid]['transaction']['amount']
+        if address not in wallets_db:
+            return jsonify({'error': 'Wallet not found'}), 404
+
+        wallet_transactions = wallets_db[address]['transactions']
+        relevant_transactions = [
+            {
+                'transaction_id': tid,
+                'sender': wallets_db[tid]['transaction']['sender'],
+                'recipient': wallets_db[tid]['transaction']['recipient'],
+                'amount': wallets_db[tid]['transaction']['amount']
+            }
+            for tid in wallet_transactions
+        ]
+
+        return jsonify({'transactions': relevant_transactions})
+
+    except Exception as e:
+        app.logger.error(f"Error fetching transaction history: {e}")
+        return jsonify({'error': f"Error fetching transaction history: {e}"}), 500
+
+@app.route('/faucet', methods=['POST'])
+def faucet():
+    print("Faucet request received", request.headers['Content-Type'])
+    if request.headers['Content-Type'] != 'application/json':
+        return jsonify({'error': 'Content-Type must be application/json'}), 400
+
+    data = request.json
+    wallet_address = data.get('wallet_address')
+
+    if not wallet_address:
+        return jsonify({'error': 'Wallet address not provided'}), 400
+
+    # Example of interacting with Solana faucet API directly
+    faucet_url = "https://faucet.solana.com/"
+    faucet_params = {"address": wallet_address}
+
+    try:
+        response = requests.post(faucet_url, json=faucet_params)
+        response_data = response.json()  # Attempt to parse response JSON
+
+        print(f"Response: {response_data}")
+
+        if response.status_code == 200:
+            # Update balance in wallets_db (for demonstration purposes)
+            if wallet_address in wallets_db:
+                wallets_db[wallet_address]['balance_sol'] += 10  # Assuming faucet sends 10 SOL
+
+            return jsonify({"message": "Airdrop request successful!"})
+        else:
+            return jsonify({"error": f"Airdrop request failed: {response.status_code}, {response_data}"}), 500
+
+    except Exception as e:
+        return jsonify({"error": f"Exception during faucet request: {str(e)}"}), 500
+
+@app.route('/get_wallet_balance', methods=['POST'])
+def get_wallet_balance():
+    try:
+        receiver_keypair = Keypair()
+
+        data = request.get_json()
+        address = data.get('address')
+        a_public_key = receiver_keypair.pubkey().from_string(address)
+
+        # Check the balance
+        if not address:
+            return jsonify({'status': 'error', 'message': 'Address not provided'}), 400
+
+        # Retrieve balance using Solana RPC
+        balance_response = solana_client.get_balance(a_public_key)
+
+        print("balance_response: ", type(balance_response))
+
+        # Assuming GetBalanceResp has a method or attribute to access the balance
+        balance_value = balance_response.value
+        print("balance_value: ", balance_value)
+
+        balance_sol = 0
+
+        if balance_value > 0:
+            balance_sol = balance_value / 1000000000
+
+        return jsonify({'status': 'success', 'balance': balance_sol}), 200
+    except Exception as e:
+        app.logger.error(f"Error fetching wallet balance: {e}")
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+    
+def dapp_interaction_instruction(sender_pubkey, amount):
+    # Replace this with actual DApp interaction logic
+    return transfer(
+        TransferParams(
+            from_pubkey=sender_pubkey,
+            to_pubkey=sender_pubkey,  # self-transfer
+            lamports=amount
+        )
+    )
+
+
+@app.route('/transfer_sol', methods=['POST'])
+def transfer_sol():
+    try:
+        # Get data from request
+        sender_address = request.json.get('sender_address')
+        receiver_address = request.json.get('receiver_address')
+        amount = request.json.get('amount')
+        sender_private_key = request.json.get('private_key')
+
+
+        # Validate the input
+        if not sender_address or not amount or not sender_private_key:
+            return jsonify({'error': 'Invalid transaction data'}), 400
+
+        # Decode the sender's private key
+        sender_keypair = Keypair()
+        receiver_ad = Keypair()
+        sender_pub_key_ = sender_keypair.pubkey()
+
+
+        if receiver_address:
+            # Create transfer instruction
+            receiver_public_key = receiver_ad.pubkey()
+            amount = int(amount)  # Amount in lamports (1 SOL = 1,000,000,000 lamports)
+
+            ix = transfer(
+                TransferParams(
+                    from_pubkey=sender_pub_key_,
+                    to_pubkey=receiver_public_key,
+                    lamports=amount
+                )
+            )
+        else:
+            # Example: Interact with a DApp
+            ix = dapp_interaction_instruction(sender_pub_key_, amount)
+
+        # Get recent blockhash
+        blockhash_response = solana_client.get_latest_blockhash()
+        print("blockhash_response: ", blockhash_response)
+
+        if blockhash_response.value:
+            blockhash = blockhash_response.value.blockhash   
+        else:
+            raise Exception("Failed to fetch the latest blockhash")
+        
+        
+        print("blockhash: ", blockhash)
+
+        # Create message
+        msg = MessageV0.try_compile(
+            payer=sender_pub_key_,
+            instructions=[ix],
+            address_lookup_table_accounts=[],
+            recent_blockhash=blockhash,
+        )
+        print("msg: ", msg)
+
+        # Create transaction
+        tx = VersionedTransaction(msg, [sender_keypair])
+        
+        
+        print("tx: ", tx)
+
+        recent_blockhash = tx.message.recent_blockhash
+        str_hash = str(recent_blockhash)
+
+
+        signature = tx.signatures[0]
+        str_signature = str(signature)
+        print(" tx.signatures[0]: ",  str_signature)
+
+        response_data = {
+            'recent_blockhash': str_hash,
+            'status': 'Success',
+            'tx_id': str_signature
         }
-        for tid in wallet_transactions
-    ]
 
-    return jsonify({'transactions': relevant_transactions})
+        print("response_data: ", response_data)
 
-if __name__ == '__main__':
+        # transaction_url = f"https://explorer.solana.com/tx/{tx_id}?cluster=devnet"
+        # print("transaction_url: ", transaction_url)
+        return jsonify(response_data), 200
+
+    except Exception as e:
+        app.logger.error(f"Error transferring SOL: {e}")
+        return jsonify({'error': f"Error transferring SOL: {e}"}), 500
+
+# Setup logging
+logging.basicConfig(level=logging.DEBUG)
+
+if __name__ == '__main__': 
     app.run(debug=True)

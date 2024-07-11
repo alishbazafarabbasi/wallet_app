@@ -8,6 +8,23 @@
       rel="stylesheet"
       href="{{ url_for('static', filename='css/style.css') }}"
     />
+    <style>
+      h2, h3 {
+        color: rgb(3, 3, 109);
+      }
+
+      button {
+        background-color: rgb(3, 3, 109);
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        cursor: pointer;
+      }
+
+      button:hover {
+        background-color: rgb(4, 4, 160); /* Darker blue for hover effect */
+      }
+    </style>
   </head>
   <body>
     <div class="container">
@@ -23,20 +40,11 @@
               name="wallet_name"
               required
             /><br /><br />
-            <label for="mnemonic">Enter Mnemonic:</label><br />
-            <textarea
-              id="mnemonic"
-              name="mnemonic"
-              rows="6"
-              cols="50"
-              required
-            ></textarea
-            ><br /><br />
             <button type="submit">Create Wallet</button>
           </form>
+          <br />
         </div>
       </div>
     </div>
   </body>
 </html>
-
