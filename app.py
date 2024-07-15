@@ -6,11 +6,18 @@ import logging
 from solders.transaction import VersionedTransaction
 from solders.system_program import transfer, TransferParams
 from solders.message import MessageV0
-
+from config import Config
+from routes.wallet_routes import wallet_bp
+from routes.transaction_routes import transaction_bp
 
 
 app = Flask(__name__)
-app.logger.setLevel(logging.INFO) 
+app.logger.setLevel(logging.INFO)
+app.config.from_object(Config)
+
+# Register Blueprints
+app.register_blueprint(wallet_bp)
+app.register_blueprint(transaction_bp)
 
 wallets_db = {}
 
