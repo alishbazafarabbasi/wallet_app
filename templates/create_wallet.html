@@ -4,27 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Create Wallet</title>
-    <link
-      rel="stylesheet"
-      href="{{ url_for('static', filename='css/style.css') }}"
-    />
-    <style>
-      h2, h3 {
-        color: rgb(3, 3, 109);
-      }
-
-      button {
-        background-color: rgb(3, 3, 109);
-        color: white;
-        border: none;
-        padding: 10px 20px;
-        cursor: pointer;
-      }
-
-      button:hover {
-        background-color: rgb(4, 4, 160); /* Darker blue for hover effect */
-      }
-    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
   </head>
   <body>
     <div class="container">
@@ -32,34 +12,26 @@
         <div class="create-wallet">
           <h2>Create Wallet</h2>
           <h3>Solana Coin</h3>
-          <form action="/create_wallet" method="post">
-            <label for="wallet_name">Enter Wallet Name:</label><br />
-            <input
-              type="text"
-              id="wallet_name"
-              name="wallet_name"
-              required
-            /><br /><br />
-            <label for="secret_key"
-              >Enter Secret Key (comma-separated integers): e-g </label
-            ><br />
-            <input type="text" id="secret_key" name="secret_key" required />
-            <br />
-            <br />
-            Example key: 123, 456, 789
-            <br />
-            <br />
-
+          <form action="{{ url_for('wallet.create_wallet') }}" method="post">
+            <label for="mnemonic">Enter Mnemonic (Save your Recovery Passphrase)</label><br />
+            <textarea id="mnemonic" name="mnemonic" rows="4" cols="60" required></textarea><br /><br />
+            <button type="submit">Create Wallet</button>
             {% if error %}
-            <div class="error-message" style="color: red">
+            <div class="error-message">
               <p>{{ error }}</p>
             </div>
             {% endif %}
-            <button type="submit">Create Wallet</button>
           </form>
-          <br />
+          <div class="wallet-btn">
+            <form action="{{ url_for('wallet.login_wallet') }}" method="get">
+              <button type="submit">Already have a wallet?</button>
+            </form>
+            <button>
+              <a href="https://iancoleman.io/bip39/" style="text-decoration: none; color: white; margin-top: 1rem">Get your Mnemonics</a>
+            </button>
+          </div>
         </div>
       </div>
     </div>
-  </body>
+  </body>
 </html>

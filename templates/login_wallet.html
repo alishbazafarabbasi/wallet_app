@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Create Wallet</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+  </head>
+  <body>
+    <div class="container">
+      <div class="content">
+        <div class="login-wallet">
+          <h2>Login Wallet</h2>
+          <h3>Solana Coin</h3>
+          <form action="/login_wallet" method="post">
+            <label for="secret_key">Enter Secret Key (comma-separated integers):</label><br />
+            <input type="text" id="secret_key" name="secret_key" required /><br /><br />
+            {% if error %}
+            <div class="error-message">
+              <p>{{ error }}</p>
+            </div>
+            {% endif %}
+            <button type="submit">Login</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

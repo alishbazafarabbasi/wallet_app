@@ -1,214 +1,141 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
+<head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Blockchain Wallet</title>
-    <link
-      rel="stylesheet"
-      href="{{ url_for('static', filename='css/style.css') }}"
-    />
-    <style>
-      h2 {
-        color: rgb(3, 3, 109);
-      }
-
-      button {
-        background-color: rgb(3, 3, 109);
-        color: white;
-        border: none;
-        padding: 10px 20px;
-        cursor: pointer;
-      }
-
-      button:hover {
-        background-color: rgb(4, 4, 160); /* Lighter blue for hover effect */
-      }
-
-      #faucet-button {
-        background-color: rgb(3, 3, 109);
-        color: white;
-        border: none;
-        padding: 10px 20px;
-        cursor: pointer;
-      }
-
-      #faucet-button:hover {
-        background-color: rgb(70, 70, 150); /* Lighter blue for hover effect */
-      }
-    </style>
-  </head>
-  <body>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+</head>
+<body>
     <div class="container">
-      <div class="content">
-        <div class="wallet">
-          <h2>Blockchain Wallet</h2>
-          <div class="wallet-info">
-            <p><strong>Wallet Name:</strong> {{ wallet_name }}</p>
-            <p><strong>Address:</strong> {{ address }}</p>
-            <p><strong>Public Key:</strong> {{ public_key }}</p>
-            <!-- <p><strong>Private Key:</strong> {{ private_key }}</p> -->
-          </div>
-          <div class="qr-code" id="qr-code"></div>
-          <div class="send-form" id="send-form">
-            <input type="text" id="recipient" placeholder="Recipient Address" />
-            <input type="number" id="amount" placeholder="Amount" />
-            <button onclick="sendTransaction()">Send</button>
-          </div>
-        </div>
-        <!-- <button onclick="toggleSend()">Send Transaction</button> -->
-        <div
-          id="faucet-container"
-          style="
-            display: flex;
-            justify-content: center;
-            margin-top: 1rem;
-            gap: 2rem;
-          "
-        >
-          <div id="faucet-form">
-            <input
-              type="hidden"
-              id="wallet_address"
-              name="wallet_address"
-              value="{{ address }}"
-            />
-            <a
-              href="https://faucet.solana.com"
-              style="text-decoration: none; color: white; margin-top: 1rem"
-            >
-              <button id="faucet-button">Request Tokens from Faucet</button>
-            </a>
-          </div>
-          <div id="balance-form">
-            <button onclick="getWalletBalance()">Get Wallet Balance</button>
-          </div>
-        </div>
-        <div
-          style="
-            display: flex;
-            justify-content: center;
-            margin-top: 0.5rem;
-            align-items: center;
-            gap: 0.5rem;
-          "
-        >
-          <h3>Balance:</h3>
-          <div id="balance-value"></div>
-        </div>
-        <div id="balance-result"></div>
+        <div class="content">
+            <div class="wallet">
+                <h1>Blockchain Wallet</h1>
+                <div class="wallet-info">
+                    <p><strong>Wallet Address:</strong> {{ address }}</p>
+                    <p><strong>Public Key:</strong><br />{{ public_key }}</p>
+                    <p><strong>Private Key:</strong> {{ private_key_hex }}</p>
+                    {% if secret_key %}
+                    <p><strong>Secret Key:</strong> {{ secret_key }}</p>
+                    {% endif %}
+                    {% if mnemonic_phrase %}
+                    <p><strong>Mnemonic:</strong> {{ mnemonic_phrase }}</p>
+                    {% endif %}
+                </div>
+                <div class="qr-code" id="qr-code"></div>
+                <div class="send-form" id="send-form">
+                    <input type="text" id="recipient" placeholder="Recipient Address" />
+                    <input type="number" id="amount" placeholder="Amount" />
+                    <button onclick="sendTransaction()">Send</button>
+                </div>
+                <div id="faucet-container" class="button-container">
+                    <input type="hidden" id="wallet_address" name="wallet_address" value="{{ address }}" />
+                    <a href="https://faucet.solana.com" style="text-decoration: none;">
+                        <button id="faucet-button">Request Tokens from Faucet</button>
+                    </a>
+                    <button onclick="getWalletBalance()">Get Wallet Balance</button>
+                </div>
+                <br>
+                <div class="balance-section">
+                    <h3>Balance:</h3>
+                    <div id="balance-value"></div>
+                </div>
+                <div id="balance-result"></div>
 
-        <h1>Transfer SOL</h1>
-        <form onsubmit="event.preventDefault(); transferSOL();">
-          <label for="sender_address">Sender Address:</label><br />
-          <input
-            type="text"
-            id="sender_address"
-            name="sender_address"
-          /><br /><br />
+                <h1>Transfer SOL</h1>
+                <form onsubmit="event.preventDefault(); transferSOL();">
+                    <label for="sender_address">Sender Address:</label><br />
+                    <input type="text" id="sender_address" name="sender_address" /><br />
 
-          <label for="receiver_address">Receiver Address:</label><br />
-          <input
-            type="text"
-            id="receiver_address"
-            name="receiver_address"
-          /><br /><br />
+                    <label for="receiver_address">Receiver Address:</label><br />
+                    <input type="text" id="receiver_address" name="receiver_address" /><br />
 
-          <label for="tamount">Amount (in lamports):</label><br />
-          <input type="text" id="tamount" name="tamount" /><br /><br />
+                    <label for="tamount">Amount (in lamports):</label><br />
+                    <input type="text" id="tamount" name="tamount" /><br />
 
-          <label for="private_key">Sender Private Key:</label><br />
-          <input type="text" id="private_key" name="private_key" /><br /><br />
-          <button type="submit">Transfer</button>
-        </form>
-        <div id="result">
-          <p id="tx_id"></p>
-          <p id="blockhash"></p>
-          <p id="status" style="color: green"></p>
+                    <label for="private_key">Sender Private Key:</label><br />
+                    <input type="text" id="private_key" name="private_key" /><br />
+                    <button type="submit">Transfer</button>
+                </form>
+                <div id="result">
+                    <p id="tx_id"></p>
+                    <p id="blockhash"></p>
+                    <p id="status" class="status-success"></p>
+                </div>
+                <div id="error_message" class="error-message"></div>
+            </div>
         </div>
-        <div id="error_message" style="color: red"></div>
-      </div>
     </div>
     <script>
-      function toggleSend() {
-        const sendForm = document.getElementById("send-form");
-        sendForm.classList.toggle("active");
-      }
-
-      function getWalletBalance() {
-        const address = document.getElementById("wallet_address").value;
-        const balanceResult = document.getElementById("balance-result");
-
-        fetch("/get_wallet_balance", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ address: address }),
-        })
-          .then((response) => {
-            console.log("Response received:", response);
-            if (!response.ok) {
-              throw new Error(`HTTP error! Status: ${response.status}`);
-            }
-            return response.json();
-          })
-          .then((data) => {
-            console.log("Data received:", data);
-            if (data?.status === "success") {
-              document.getElementById("balance-value").innerText = data.balance;
-              balanceResult.innerHTML = `<p style="color: green">Wallet balance fetched successfully.</p>`;
-            } else {
-              balanceResult.innerHTML = `<p>Error: ${data?.message}</p>`;
-            }
-          })
-          .catch((error) => {
-            console.error("Error fetching wallet balance:", error);
-            balanceResult.innerHTML = `<p>Error: ${error.message}</p>`;
-          });
-      }
-
-      async function transferSOL() {
-        const senderAddress = document.getElementById("sender_address").value;
-        const receiverAddress =
-          document.getElementById("receiver_address").value;
-        const amountStr = document.getElementById("tamount").value;
-        const privateKey = document.getElementById("private_key").value;
-        const amount = parseInt(amountStr, 10);
-        try {
-          const response = await fetch("/transfer_sol", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              sender_address: senderAddress,
-              receiver_address: receiverAddress || null,
-              amount: amount,
-              private_key: privateKey,
-            }),
-          });
-
-          const result = await response.json();
-
-          if (response.ok) {
-            document.getElementById(
-              "blockhash"
-            ).innerText = `Recent Blockhash: ${result.recent_blockhash}`;
-            document.getElementById(
-              "status"
-            ).innerText = `Status: ${result.status}`;
-            document.getElementById(
-              "tx_id"
-            ).innerText = `Transaction ID: ${result.tx_id}`;
-            document.getElementById("error_message").style.display = "none";
-          } else {
-            throw new Error(result.error || "Unknown error occurred.");
-          }
-        } catch (error) {
-          document.getElementById("error_message").innerText = error.message;
+        function toggleSend() {
+            const sendForm = document.getElementById("send-form");
+            sendForm.classList.toggle("active");
         }
-      }
+
+        function getWalletBalance() {
+            const address = document.getElementById("wallet_address").value;
+            const balanceResult = document.getElementById("balance-result");
+
+            fetch("/get_wallet_balance", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ address: address }),
+            })
+            .then((response) => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then((data) => {
+                if (data?.status === "success") {
+                    document.getElementById("balance-value").innerText = data.balance ? data.balance : 0;
+                    balanceResult.innerHTML = `<p class="status-success">Wallet balance fetched successfully.</p>`;
+                } else {
+                    balanceResult.innerHTML = `<p>Error: ${data?.message}</p>`;
+                }
+            })
+            .catch((error) => {
+                balanceResult.innerHTML = `<p>Error: ${error.message}</p>`;
+            });
+        }
+
+        async function transferSOL() {
+            const senderAddress = document.getElementById("sender_address").value;
+            const receiverAddress = document.getElementById("receiver_address").value;
+            const amountStr = document.getElementById("tamount").value;
+            const privateKey = document.getElementById("private_key").value;
+            const amount = parseInt(amountStr, 10);
+            try {
+                const response = await fetch("/transfer_sol", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        sender_address: senderAddress,
+                        receiver_address: receiverAddress || null,
+                        amount: amount,
+                        private_key: privateKey,
+                    }),
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    document.getElementById("blockhash").innerText = `Recent Blockhash: ${result.recent_blockhash}`;
+                    document.getElementById("status").innerText = `Status: ${result.status}`;
+                    document.getElementById("tx_id").innerText = `Transaction ID: ${result.tx_id}`;
+                    document.getElementById("error_message").style.display = "none";
+                } else {
+                    throw new Error(result.error || "Unknown error occurred.");
+                }
+            } catch (error) {
+                document.getElementById("error_message").innerText = error.message;
+            }
+        }
     </script>
-  </body>
+</body>
 </html>

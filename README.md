@@ -2,47 +2,51 @@
 
 ## Overview
 
-The **Blockchain Wallet** project is a web application that allows users to manage Solana blockchain wallets. This app provides features for creating new wallets, viewing wallet details, requesting tokens from a faucet, checking wallet balances, and transferring SOL (Solana cryptocurrency) between addresses.
+The **Blockchain Wallet** project is a web application designed for managing Solana blockchain wallets. Users can create new wallets, view wallet details, request tokens from a faucet, check wallet balances, and transfer SOL (Solana cryptocurrency) between addresses.
 
 ## Features
 
-- **Create Wallet**  
-  Generate a new Solana wallet and view its details.
-
-- **View Wallet Details**  
-  Display the wallet's name, address, and public key.
-
-- **Request Tokens**  
-  Request tokens from the Solana faucet.
-
-- **Get Wallet Balance**  
-  Fetch and display the balance of a wallet.
-
-- **Transfer SOL**  
-  Send SOL from one wallet to another.
+- **Create Wallet**: Generate a new Solana wallet and view its details.
+- **Login Wallet**: Log in to an existing wallet using a secret key.
+- **View Wallet Details**: Display the wallet's address, public key, private key, and optionally the secret key and mnemonic phrase.
+- **Request Tokens**: Request tokens from the Solana faucet.
+- **Get Wallet Balance**: Fetch and display the balance of a wallet.
+- **Transfer SOL**: Send SOL from one wallet to another.
+- **Generate Mnemonics**: Create a mnemonic phrase to be used for wallet creation.
 
 ## Technologies Used
 
-- **Frontend:**  
-  HTML, CSS, JavaScript
+- **Frontend**: HTML, CSS, JavaScript
+- **Backend**: Flask (Python)
+- **Blockchain**: Solana
 
-- **Backend:**  
-  Flask (Python)
+## Installation
 
-- **Blockchain:**  
-  Solana
+1. **Clone the Repository**:
+   `git clone https://github.com/yourusername/blockchain-wallet.git`
+   `cd blockchain-wallet`
+
+2. **Create a Virtual Environment:**:
+   `python -m venv venv`
+   `source venv/bin/activate`  # On Windows use `venv\Scripts\activate`
+
+3. **Install Dependencies:**:
+   `pip install -r requirements.txt`
+
+3. **Run the Application**:
+   `python app.py`
 
 ## Usage
 
 ### Create Wallet
 
-1. Navigate to the **_Create Wallet_** page at the root URL (`/`).
-2. Enter a name for the wallet and click **_Create Wallet_**.
-3. A new wallet will be created, and you will be redirected to the wallet details page.
+1. Navigate to the **_Login Wallet_** page (`/login_wallet`).
+2. Enter your secret key (comma-separated integers) and click **login**.
+3. You will be redirected to the wallet details page.
 
 ### View Wallet Details
 
-- The wallet details page displays the wallet's name, address, and public key.
+- The wallet details page displays the wallet's address, public key, private key, and optionally the secret key and mnemonic phrase.
 
 ### Request Tokens from Faucet
 
