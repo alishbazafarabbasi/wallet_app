@@ -3,35 +3,178 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Create Wallet</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+    <title>Solana Airdrop</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/style.css') }}"
+    />
+    <style>
+      body {
+        background-color: #221c1c;
+        color: #ffffff;
+        font-family: Arial, sans-serif;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin: 0;
+      }
+      .container {
+        background-color: #ffffff12;
+        padding: 30px;
+        border: 1px solid #ffffff30;
+        border-radius: 10px;
+        box-shadow: 0 0 20px 11px rgb(188 188 188 / 19%);
+        text-align: center;
+      }
+      .content {
+        background-color: #1e1e1ef2;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 0px 11px 108px rgb(0 0 0 / 36%);
+      }
+
+      .walletCont {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 4rem;
+        margin-top: 4rem;
+      }
+
+      img {
+        margin-bottom: 1rem;
+      }
+
+      h2,
+      h3 {
+        color: #fff;
+      }
+      button {
+        background-color: #5f61bba3;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        cursor: pointer;
+        border-radius: 4px;
+        font-size: 16px;
+        transition: background-color 0.3s ease;
+        margin-top: 10px;
+        margin-bottom: 10px;
+        width: 300px;
+        height: 50px;
+      }
+      button:hover {
+        background-color: #4f46e5;
+      }
+
+      .error-message {
+        color: red;
+        margin-top: 20px;
+      }
+      a {
+        color: white;
+        text-decoration: none;
+      }
+      a:hover {
+        text-decoration: underline;
+      }
+    </style>
   </head>
   <body>
     <div class="container">
       <div class="content">
+        <img
+          alt="Solana Logo"
+          width="300px"
+          src="../static/images/solanaLogo.svg"
+        />
         <div class="create-wallet">
-          <h2>Create Wallet</h2>
-          <h3>Solana Coin</h3>
-          <form action="{{ url_for('wallet.create_wallet') }}" method="post">
-            <label for="mnemonic">Enter Mnemonic (Save your Recovery Passphrase)</label><br />
-            <textarea id="mnemonic" name="mnemonic" rows="4" cols="60" required></textarea><br /><br />
-            <button type="submit">Create Wallet</button>
-            {% if error %}
-            <div class="error-message">
-              <p>{{ error }}</p>
-            </div>
-            {% endif %}
-          </form>
-          <div class="wallet-btn">
-            <form action="{{ url_for('wallet.login_wallet') }}" method="get">
+          <h2>Create Your Wallet</h2>
+          <div class="walletCont">
+            <form action="{{ url_for('wallet.create_wallet') }}" method="post">
+              <div
+                style="
+                  display: flex;
+                  position: absolute;
+                  left: 38%;
+                  top: 35%;
+                  gap: 1rem;
+                  padding: 1rem;
+                "
+              >
+                <label for="language">Choose Mnemonic Language:</label>
+                <select id="language" name="language" style="padding: 3px">
+                  <option value="english">English</option>
+                  <option value="chinese_simplified">Chinese Simplified</option>
+                </select>
+              </div>
+              <textarea
+                id="mnemonic"
+                name="mnemonic"
+                rows="4"
+                cols="60"
+                readonly
+                style="display: none"
+              >
+              {{ mnemonic_phrase }}
+              </textarea>
+              <img
+                alt="Solana Logo"
+                src="../static/images/solimage.png"
+                style="
+                  width: 250px;
+                  height: 230px;
+                  border-radius: 50%;
+                  margin-bottom: 1rem;
+                "
+              />
+              <h3>Create a new wallet</h3>
+              <form
+                action="{{ url_for('wallet.create_wallet') }}"
+                method="post"
+              >
+                <button type="submit">Create Wallet</button>
+              </form>
+
+              <br />
+              {% if error %}
+              <div class="error-message">
+                <p>{{ error }}</p>
+              </div>
+              {% endif %}
+            </form>
+            <form
+              action="{{ url_for('wallet.login_existing_wallet') }}"
+              method="get"
+            >
+              <img
+                alt="Solana Logo"
+                src="../static/images/solimage.png"
+                style="
+                  width: 250px;
+                  height: 230px;
+                  border-radius: 50%;
+                  margin-bottom: 1rem;
+                "
+              />
+              <h3>Already have your Recovery Phrase?</h3>
               <button type="submit">Already have a wallet?</button>
             </form>
-            <button>
-              <a href="https://iancoleman.io/bip39/" style="text-decoration: none; color: white; margin-top: 1rem">Get your Mnemonics</a>
-            </button>
           </div>
         </div>
       </div>
     </div>
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        fetch('{{ url_for("wallet.create_wallet") }}', {
+          method: "POST",
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            document.getElementById("mnemonic").textContent = data.mnemonic;
+          })
+          .catch((error) => console.error("Error generating mnemonic:", error));
+      });
+    </script>
   </body>
 </html>
