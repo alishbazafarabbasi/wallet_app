@@ -8,9 +8,10 @@ import os
 
 app = Flask(__name__)
 app.config.from_object(Config)
-app.register_blueprint(wallet_bp)
 
-app = Flask(__name__)
+# Register Blueprints
+app.register_blueprint(wallet_bp)
+app.register_blueprint(transaction_bp)
 
 # Secret token for validating GitHub webhook requests
 GITHUB_SECRET = os.environ.get('GITHUB_SECRET', 'iamalishba')
@@ -54,13 +55,5 @@ def webhook():
 
     return jsonify({'status': 'Webhook received'}), 200
 
-if __name__ == '_main_':
-    app.run(port=3000, debug=True)
-
-
-# Register Blueprints
-# app.register_blueprint(wallet_bp)
-app.register_blueprint(transaction_bp)
-
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(port=3000, debug=True)

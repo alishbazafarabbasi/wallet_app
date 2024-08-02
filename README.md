@@ -1,4 +1,4 @@
-# Blockchain Wallet App
+# Blockchain Wallet
 
 ## Overview
 
