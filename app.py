@@ -1,3 +1,4 @@
+import threading
 from flask import Flask, request, jsonify
 from config import Config
 from routes.wallet_routes import wallet_bp
@@ -5,6 +6,14 @@ from routes.transaction_routes import transaction_bp
 import hmac
 import hashlib
 import os
+import sys
+
+# Add the parent directory to PYTHONPATH
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'CodeBot'))
+
+# Import the reload_documents function from the codebot package
+from CodeBot.chatbot import reload_documents
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -49,6 +58,8 @@ def webhook():
     if event == 'push':
         print('Push event received:')
         print(data)
+        # Reload documents in a separate thread to avoid blocking the request
+        threading.Thread(target=reload_documents).start()
     else:
         print(f'Unhandled event: {event}')
         print(data)
